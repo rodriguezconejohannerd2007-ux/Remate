@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda de Remate - Liquidaciones</title>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:"Segoe UI",sans-serif; background:#202124; min-height:100vh; color:#eee; }
+        header { background:#2d2f33; padding:20px; border-radius:10px; margin-bottom:25px; box-shadow:0 0 15px rgba(0,0,0,0.4);}
+        header h1 { color:#c6ff00; font-size:2.2em; margin-bottom:10px; text-shadow:0 0 10px #c6ff00;}
+        nav button { background:#76ff03; color:#000; font-weight:bold; border:none; padding:10px 20px; margin-right:10px; border-radius:6px; cursor:pointer; transition:.3s; font-size:15px;}
+        nav button:hover { background:#64dd17; transform:translateY(-3px);}
+        nav button.active { background:#64dd17;}
+        .container { max-width:1200px; margin:auto; padding:20px;}
+        .page { display:none; }
+        .page.active { display:block; }
+        .filters { background:#2d2f33; padding:20px; border-radius:10px; margin-bottom:20px; }
+        .filters select { padding:12px; border-radius:6px; background:#1c1d20; color:#c6ff00; border:2px solid #76ff03; font-size:16px; width:250px; }
+        .products-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:25px;}
+        .product-card { background:#1c1d20; padding:20px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.4); transition:.3s; }
+        .product-card:hover { transform:translateY(-6px); box-shadow:0 0 15px rgba(118,255,3,0.7); }
+        .product-card h3 { color:#76ff03; }
+        .category { background:#c6ff00; padding:5px 12px; border-radius:15px; font-size:12px; color:#000; font-weight:bold; }
+        .price { color:#00e676; font-size:22px; font-weight:bold; margin-top:10px; }
+        .product-card button { background:#00e676; color:#000; font-weight:bold; border:none; padding:12px; width:100%; margin-top:10px; border-radius:6px; cursor:pointer; transition:.3s; }
+        .product-card button:hover { background:#1de9b6; }
+        .login-box { background:#2d2f33; padding:40px; border-radius:10px; max-width:400px; margin:80px auto; box-shadow:0 0 15px rgba(0,0,0,0.6);}
+        .login-box h2 { text-align:center; color:#76ff03; margin-bottom:20px; }
+        input, textarea, select { background:#1c1d20; color:#eee; border:2px solid #444; }
+        .btn-primary { background:#76ff03; color:#000; font-weight:bold; padding:12px; border-radius:6px; border:none; width:100%; margin-top:10px; cursor:pointer; }
+        .btn-primary:hover { background:#64dd17; }
+        table { width:100%; border-collapse:collapse; background:#1c1d20; border-radius:10px; overflow:hidden; margin-top:20px; }
+        thead { background:#76ff03; color:#000; }
+        th, td { padding:15px; border-bottom:1px solid #333; }
+        .btn-edit { background:#00e5ff; color:#000; padding:8px 15px; border-radius:5px; }
+        .btn-delete { background:#ff1744; color:#fff; padding:8px 15px; border-radius:5px; }
+        .alert-success { background:#c6ff00; padding:15px; border-radius:5px; color:#000; margin-bottom:20px; font-weight:bold; }
+        .alert-error { background:#ff5252; padding:15px; border-radius:5px; color:white; margin-bottom:20px; font-weight:bold; }
+
+        /* Categorías */
+        .category-manager { background:#2d2f33; padding:15px; border-radius:10px; margin:15px 0; }
+        .category-manager input { padding:8px; border-radius:6px; border:1px solid #76ff03; margin-right:10px; background:#1c1d20; color:#c6ff00; }
+        .category-manager button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#76ff03; color:#000; font-weight:bold; margin-right:5px; }
+        .category-manager button:hover { background:#64dd17; }
+        .category-manager select { padding:8px; border-radius:6px; border:1px solid #76ff03; background:#1c1d20; color:#c6ff00; margin-right:10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>💥 Tienda de Remate - Liquidaciones</h1>
+        <nav>
+            <button onclick="showPage('tienda')" id="btnTienda">🛒 Tienda</button>
+            <button onclick="showPage('login')" id="btnLogin">🔐 Login</button>
+            <button onclick="showPage('dashboard')" id="btnDashboard" style="display:none">📊 Dashboard</button>
+            <button onclick="showPage('crud')" id="btnCrud" style="display:none">⚙️ Administrar</button>
+            <button onclick="logout()" id="btnLogout" style="display:none">🚪 Salir</button>
+        </nav>
+    </header>
+
+    <!-- TIENDA -->
+    <div id="tienda" class="page active">
+        <div class="filters">
+            <label><strong>Filtrar por categoría:</strong></label>
+            <select id="categoryFilter" onchange="filterProducts()"></select>
+        </div>
+        <div id="productsGrid" class="products-grid"></div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login" class="page">
+        <div class="login-box">
+            <h2>Acceso Administrador</h2>
+            <div id="loginAlert"></div>
+            <form onsubmit="handleLogin(event)">
+                <label>Usuario:</label>
+                <input id="username" required>
+                <label>Contraseña:</label>
+                <input id="password" type="password" required>
+                <button class="btn-primary">Ingresar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="page">
+        <h2 style="color:#76ff03">📊 Panel de Control</h2>
+        <p>Total productos: <span id="totalProducts">0</span></p>
+        <p>Items en carrito: <span id="cartItems">0</span></p>
+    </div>
+
+    <!-- CRUD -->
+    <div id="crud" class="page">
+        <h2 style="color:#76ff03">⚙️ Administrar Productos</h2>
+        <div id="crudAlert"></div>
+
+        <!-- Formulario Productos -->
+        <form id="productForm" onsubmit="saveProduct(event)">
+            <input type="hidden" id="editId">
+            <label>Nombre:</label>
+            <input id="productName" required>
+            <label>Descripción:</label>
+            <textarea id="productDescription" required></textarea>
+            <label>Precio:</label>
+            <input id="productPrice" type="number" required>
+            <label>Categoría:</label>
+            <select id="productCategory" required></select>
+            <label>Stock:</label>
+            <input id="productStock" type="number" required>
+            <button class="btn-primary">Guardar</button>
+        </form>
+
+        <!-- Administrar Categorías -->
+        <div class="category-manager">
+            <h3>Administrar Categorías</h3>
+            <input id="newCategory" placeholder="Nueva categoría">
+            <button onclick="addCategory()">Agregar</button>
+            <select id="existingCategories"></select>
+            <button onclick="removeCategory()">Eliminar</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th><th>Nombre</th><th>Cat</th><th>Precio</th><th>Stock</th><th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="productsTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let categories = ["Electrónica","Hogar","Ropa","Deportes"];
+let products = [
+    {id:1,name:"Televisor 50''",description:"Televisor LED en remate final",price:899000,category:"Electrónica",stock:3},
+    {id:2,name:"Cafetera Oster",description:"Últimas unidades disponibles",price:129000,category:"Hogar",stock:10},
+    {id:3,name:"Chaqueta impermeable",description:"Liquidación total",price:59000,category:"Ropa",stock:20},
+    {id:4,name:"Bicicleta MTB",description:"Modelo 2022 remate",price:450000,category:"Deportes",stock:5},
+    {id:5,name:"Laptop Dell Inspiron",description:"Procesador i5, 8GB RAM, 512GB SSD",price:2500000,category:"Electrónica",stock:7},
+    {id:6,name:"Sofá 3 puestos",description:"Sofá de tela gris en oferta",price:850000,category:"Hogar",stock:4},
+    {id:7,name:"Auriculares Sony WH-1000XM4",description:"Cancelación de ruido premium",price:1200000,category:"Electrónica",stock:10},
+    {id:8,name:"Camiseta Nike",description:"Camiseta deportiva original",price:75000,category:"Ropa",stock:25},
+    {id:9,name:"Patineta Skateboard",description:"Skate de madera profesional",price:180000,category:"Deportes",stock:6},
+    {id:10,name:"Microondas Samsung",description:"Microondas 20L en promoción",price:350000,category:"Hogar",stock:8},
+    {id:11,name:"Zapatos Adidas Running",description:"Zapatillas cómodas para correr",price:220000,category:"Ropa",stock:15},
+    {id:12,name:"Smartwatch Apple Watch SE",description:"Reloj inteligente última generación",price:1500000,category:"Electrónica",stock:5},
+    {id:13,name:"Colchón Queen Memory Foam",description:"Colchón ortopédico en oferta",price:1100000,category:"Hogar",stock:3},
+    {id:14,name:"Raqueta de Tenis Wilson",description:"Raqueta profesional en remate",price:650000,category:"Deportes",stock:9}
+];
+
+let cart = [];
+let isLoggedIn = false;
+
+function init(){
+    updateCategorySelectors();
+    renderProducts();
+    updateDashboard();
+}
+init();
+
+function updateCategorySelectors(){
+    let filter = document.getElementById("categoryFilter");
+    let prodCat = document.getElementById("productCategory");
+    let existCat = document.getElementById("existingCategories");
+    filter.innerHTML = `<option value="all">Todas</option>` + categories.map(c=>`<option value="${c}">${c}</option>`).join("");
+    prodCat.innerHTML = `<option value="">Elegir...</option>` + categories.map(c=>`<option value="${c}">${c}</option>`).join("");
+    existCat.innerHTML = categories.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+
+function addCategory(){
+    let val = document.getElementById("newCategory").value.trim();
+    if(val && !categories.includes(val)){
+        categories.push(val);
+        updateCategorySelectors();
+        document.getElementById("newCategory").value="";
+        alert(`Categoría "${val}" agregada`);
+    }
+}
+
+function removeCategory(){
+    let sel = document.getElementById("existingCategories").value;
+    if(sel && confirm(`¿Eliminar la categoría "${sel}"?`)){
+        categories = categories.filter(c=>c!==sel);
+        updateCategorySelectors();
+        alert(`Categoría "${sel}" eliminada`);
+    }
+}
+
+function showPage(p){
+    document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+    document.getElementById(p).classList.add('active');
+    if(p==="crud") renderProductsTable();
+}
+
+function handleLogin(e){
+    e.preventDefault();
+    if(username.value==="admin" && password.value==="admin123"){
+        isLoggedIn = true;
+        btnDashboard.style.display = btnCrud.style.display = btnLogout.style.display = "inline-block";
+        btnLogin.style.display="none";
+        loginAlert.innerHTML = `<div class="alert-success">Acceso concedido</div>`;
+        setTimeout(()=>showPage('dashboard'),1000);
+    } else loginAlert.innerHTML = `<div class="alert-error">Credenciales incorrectas</div>`;
+}
+
+function logout(){
+    isLoggedIn=false;
+    btnDashboard.style.display = btnCrud.style.display = btnLogout.style.display = "none";
+    btnLogin.style.display="inline-block";
+    showPage('tienda');
+}
+
+function renderProducts(){
+    let grid = productsGrid;
+    let filter = categoryFilter.value;
+    let filtered = filter==="all" ? products : products.filter(p=>p.category===filter);
+    grid.innerHTML = filtered.map(p=>`
+        <div class="product-card">
+            <span class="category">${p.category}</span>
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <div class="price">$${p.price.toLocaleString("es-CO")}</div>
+            <p>Stock: ${p.stock}</p>
+            <button onclick="addToCart(${p.id})">Agregar</button>
+        </div>
+    `).join("");
+}
+
+function filterProducts(){ renderProducts(); }
+
+function addToCart(id){
+    let p = products.find(x=>x.id===id);
+    if(p.stock>0){
+        cart.push({...p});
+        p.stock--;
+        updateDashboard();
+        renderProducts();
+        if(isLoggedIn) renderProductsTable();
+        alert("Producto agregado al carrito");
+    }
+}
+
+function updateDashboard(){
+    totalProducts.textContent = products.length;
+    cartItems.textContent = cart.length;
+}
+
+function renderProductsTable(){
+    productsTableBody.innerHTML = products.map(p=>`
+        <tr>
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${p.category}</td>
+            <td>$${p.price.toLocaleString("es-CO")}</td>
+            <td>${p.stock}</td>
+            <td>
+                <button class="btn-edit" onclick="editProduct(${p.id})">Editar</button>
+                <button class="btn-delete" onclick="deleteProduct(${p.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+function saveProduct(e){
+    e.preventDefault();
+    let id = editId.value;
+    let name = productName.value;
+    let desc = productDescription.value;
+    let price = parseInt(productPrice.value);
+    let cat = productCategory.value;
+    let stock = parseInt(productStock.value);
+    if(id){
+        let p = products.find(x=>x.id==id);
+        Object.assign(p,{name,description:desc,price,category:cat,stock});
+        crudAlert.innerHTML=`<div class="alert-success">Producto actualizado</div>`;
+    } else {
+        let newId = products.length?Math.max(...products.map(x=>x.id))+1:1;
+        products.push({id:newId,name,description:desc,price,category:cat,stock});
+        crudAlert.innerHTML=`<div class="alert-success">Producto creado</div>`;
+    }
+    productForm.reset();
+    editId.value="";
+    renderProductsTable();
+    renderProducts();
+}
+
+function editProduct(id){
+    let p = products.find(x=>x.id===id);
+    editId.value=p.id;
+    productName.value=p.name;
+    productDescription.value=p.description;
+    productPrice.value=p.price;
+    productCategory.value=p.category;
+    productStock.value=p.stock;
+}
+
+function deleteProduct(id){
+    if(confirm("¿Eliminar este producto?")){
+        products = products.filter(x=>x.id!==id);
+        renderProductsTable();
+        renderProducts();
+        crudAlert.innerHTML=`<div class="alert-success">Producto eliminado</div>`;
+    }
+}
+</script>
+</body>
+</html>
